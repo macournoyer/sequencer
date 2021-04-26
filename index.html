@@ -1,0 +1,338 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="assets/css/styles.css" rel="stylesheet">
+  <title>Looptyloop</title>
+  <script src="assets/js/howler.min.js" defer></script>
+  <script src="assets/js/sequencer.js" defer></script>
+</head>
+<body>
+  <div class="flex items-center justify-center h-screen">
+ 
+    <div class="rounded bg-blue-100 filter drop-shadow-lg p-10">
+      <div class="grid grid-cols-5 gap-3 pb-4">
+        <div class="col-span-1"></div>
+        <button class="btn" id="play">Play</button>
+        <button class="btn" id="reset">Reset</button>
+        <div class="p-2">
+          <label for="bpm" class="font-bold mr-1">BPM</label>
+          <input id="bpm" value="100" class="w-10 p-1 rounded">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-10 gap-3" id="sequencer">
+        
+          <label class="pt-2 col-span-2 font-bold text-right">kick</label>
+          
+            <button
+              class="rounded h-10 w-10 step step-1"
+              data-sound="kick"
+              data-step="1"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-2"
+              data-sound="kick"
+              data-step="2"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-3"
+              data-sound="kick"
+              data-step="3"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-4"
+              data-sound="kick"
+              data-step="4"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-5"
+              data-sound="kick"
+              data-step="5"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-6"
+              data-sound="kick"
+              data-step="6"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-7"
+              data-sound="kick"
+              data-step="7"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-8"
+              data-sound="kick"
+              data-step="8"
+            ></button>
+          
+        
+          <label class="pt-2 col-span-2 font-bold text-right">snare</label>
+          
+            <button
+              class="rounded h-10 w-10 step step-1"
+              data-sound="snare"
+              data-step="1"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-2"
+              data-sound="snare"
+              data-step="2"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-3"
+              data-sound="snare"
+              data-step="3"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-4"
+              data-sound="snare"
+              data-step="4"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-5"
+              data-sound="snare"
+              data-step="5"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-6"
+              data-sound="snare"
+              data-step="6"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-7"
+              data-sound="snare"
+              data-step="7"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-8"
+              data-sound="snare"
+              data-step="8"
+            ></button>
+          
+        
+          <label class="pt-2 col-span-2 font-bold text-right">clap</label>
+          
+            <button
+              class="rounded h-10 w-10 step step-1"
+              data-sound="clap"
+              data-step="1"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-2"
+              data-sound="clap"
+              data-step="2"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-3"
+              data-sound="clap"
+              data-step="3"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-4"
+              data-sound="clap"
+              data-step="4"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-5"
+              data-sound="clap"
+              data-step="5"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-6"
+              data-sound="clap"
+              data-step="6"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-7"
+              data-sound="clap"
+              data-step="7"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-8"
+              data-sound="clap"
+              data-step="8"
+            ></button>
+          
+        
+          <label class="pt-2 col-span-2 font-bold text-right">closed-hihat</label>
+          
+            <button
+              class="rounded h-10 w-10 step step-1"
+              data-sound="closed-hihat"
+              data-step="1"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-2"
+              data-sound="closed-hihat"
+              data-step="2"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-3"
+              data-sound="closed-hihat"
+              data-step="3"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-4"
+              data-sound="closed-hihat"
+              data-step="4"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-5"
+              data-sound="closed-hihat"
+              data-step="5"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-6"
+              data-sound="closed-hihat"
+              data-step="6"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-7"
+              data-sound="closed-hihat"
+              data-step="7"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-8"
+              data-sound="closed-hihat"
+              data-step="8"
+            ></button>
+          
+        
+          <label class="pt-2 col-span-2 font-bold text-right">open-hihat</label>
+          
+            <button
+              class="rounded h-10 w-10 step step-1"
+              data-sound="open-hihat"
+              data-step="1"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-2"
+              data-sound="open-hihat"
+              data-step="2"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-3"
+              data-sound="open-hihat"
+              data-step="3"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-4"
+              data-sound="open-hihat"
+              data-step="4"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-5"
+              data-sound="open-hihat"
+              data-step="5"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-6"
+              data-sound="open-hihat"
+              data-step="6"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-7"
+              data-sound="open-hihat"
+              data-step="7"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-8"
+              data-sound="open-hihat"
+              data-step="8"
+            ></button>
+          
+        
+          <label class="pt-2 col-span-2 font-bold text-right">crash</label>
+          
+            <button
+              class="rounded h-10 w-10 step step-1"
+              data-sound="crash"
+              data-step="1"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-2"
+              data-sound="crash"
+              data-step="2"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-3"
+              data-sound="crash"
+              data-step="3"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-4"
+              data-sound="crash"
+              data-step="4"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-5"
+              data-sound="crash"
+              data-step="5"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-6"
+              data-sound="crash"
+              data-step="6"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-7"
+              data-sound="crash"
+              data-step="7"
+            ></button>
+          
+            <button
+              class="rounded h-10 w-10 step step-8"
+              data-sound="crash"
+              data-step="8"
+            ></button>
+          
+        
+      </div>
+    </div>
+  
+  </div>
+</body>
+</html>
