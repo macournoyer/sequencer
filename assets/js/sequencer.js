@@ -32,28 +32,13 @@ const howl = new Howl({
 });
 
 const maxStep = 8;
-
-document.getElementById('bpm').addEventListener('change', event => {
-  stop();
-  play();
-});
-
 const sequence = new Array(maxStep).fill();
+let playing = false;
+let currentStep = maxStep;
+let timer;
+
+// Preset sequence
 reset();
-
-function reset() {
-  sequence.forEach((_step, i) => {
-    sequence[i] = {
-      "kick": false,
-      "snare": false,
-      "clap": false,
-      "closed-hihat": false,
-      "open-hihat": false,
-      "crash": false,
-    };
-  });
-}
-
 sequence[0].kick = true;
 sequence[4].snare = true;
 sequence[4].kick = true;
@@ -62,6 +47,13 @@ sequence[0]['closed-hihat'] = true;
 sequence[4]['closed-hihat'] = true;
 sequence[6]['closed-hihat'] = true;
 refresh();
+
+
+document.getElementById('bpm').addEventListener('change', event => {
+  if (!playing) return;
+  stop();
+  play();
+});
 
 document.getElementById('sequencer').addEventListener("click", event => {
   if (event.target.tagName == 'BUTTON') {
@@ -72,7 +64,6 @@ document.getElementById('sequencer').addEventListener("click", event => {
   }
 });
 
-let playing = false;
 document.getElementById('play').addEventListener("click", event => {
   if (playing) {
     // Stop
@@ -91,15 +82,30 @@ document.getElementById('reset').addEventListener("click", event => {
   refresh();
 });
 
-let timer;
+
+function reset() {
+  sequence.forEach((_step, i) => {
+    sequence[i] = {
+      "kick": false,
+      "snare": false,
+      "clap": false,
+      "closed-hihat": false,
+      "open-hihat": false,
+      "crash": false,
+    };
+  });
+}
+
 function play() {
   let bpm = parseInt(document.getElementById('bpm').value);
   timer = setInterval(step, 60 / bpm * 250);
 }
+
 function stop() {
   if (timer) clearTimeout(timer);
   timer = null;
 }
+
 function refresh() {
   sequence.forEach((step, i) => {
     document.querySelectorAll(`.step-${i + 1}`).forEach(element => {
@@ -108,7 +114,6 @@ function refresh() {
   });
 }
 
-let currentStep = maxStep;
 function step() {
   document.querySelectorAll(`.step-${currentStep}`).forEach(element => {
     element.classList.remove('step-active');

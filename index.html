@@ -13,12 +13,12 @@
  
     <div class="rounded bg-blue-100 filter drop-shadow-lg p-10">
       <div class="grid grid-cols-5 gap-3 pb-4">
-        <div class="col-span-1"></div>
+        <div></div>
         <button class="btn" id="play">Play</button>
         <button class="btn" id="reset">Reset</button>
-        <div class="p-2">
+        <div class="p-2 col-span-2">
           <label for="bpm" class="font-bold mr-1">BPM</label>
-          <input id="bpm" value="100" class="w-10 p-1 rounded">
+          <input id="bpm" value="100" type="range" min="60" max="140">
         </div>
       </div>
 
