@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.btn {
+  @apply font-bold py-2 px-4 rounded bg-blue-500 text-white;
+}
+
+.step {
+  @apply bg-blue-200;
+}
+
+.step.step-active {
+  @apply bg-blue-300;
+}
+
+.step.step-enabled {
+  @apply bg-blue-400;
+}
+
+.step.step-enabled.step-active {
+  @apply bg-blue-500;
+}
+
