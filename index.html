@@ -1,3 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Digitakt 2 Inspired Step Sequencer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f12;
+      --panel: #14171c;
+      --panel-2: #1a1f26;
+      --edge: #0b0d10;
+      --text: #d7dde5;
+      --subtext: #91a0b5;
+      --accent: #ff7a18; /* Elektron-esque amber/orange */
+      --accent-2: #ffb84d;
+      --danger: #ff3b3b;
+      --ok: #2bd66a;
+      --muted: #2a3241;
+      --led-off: #1a1a1a;
+      --led-on: #ff7a18;
+      --step-on: #212733;
+      --step-off: #101319;
+      --shadow: 0 6px 18px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.025);
+      --radius: 14px;
+      --tick: #3b4558;
+      --note-lit: #ffc266;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 1200px at 20% -10%, #17202c 0%, #0e1218 35%, #0b0e13 100%), var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    /* Device shell */
+    .device {
+      width: min(1120px, 98vw);
+      background: linear-gradient(180deg, #14171c, #0f1318);
+      border-radius: 22px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.65), inset 0 2px 0 rgba(255,255,255,0.04), inset 0 -2px 0 rgba(0,0,0,0.4);
+      border: 1px solid #0c0f12;
+      padding: 18px 18px 14px;
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px;
+    }
+
+    .screen {
+      background: linear-gradient(180deg, #0d1117, #090c11);
+      border: 1px solid #0b0f14;
+      border-radius: 14px;
+      padding: 18px 18px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 16px;
+      min-height: 120px;
+    }
+    .screen .title {
+      font-family: Orbitron, monospace;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      font-size: clamp(16px, 2.4vw, 22px);
+      color: #e6ecf5;
+      text-shadow: 0 0 10px rgba(255,122,24,0.18);
+    }
+    .screen .data {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 10px 16px;
+      align-items: center;
+    }
+    .kv {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #0f141b, #0b0f15);
+      border: 1px solid #0e131a;
+    }
+    .kv .k {
+      color: var(--subtext);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .kv .v {
+      font-family: Orbitron, monospace;
+      color: #eef3fb;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    /* Encoders */
+    .encoders {
+      background: linear-gradient(180deg, #12161d, #0d1117);
+      border: 1px solid #0c1117;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-content: center;
+    }
+    .encoder {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 8px;
+      align-items: center;
+      justify-items: center;
+      user-select: none;
+    }
+    .encoder .label {
+      font-size: 11px;
+      color: var(--subtext);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+    .knob {
+      position: relative;
+      width: clamp(58px, 8vw, 74px);
+      aspect-ratio: 1/1;
+      border-radius: 50%;
+      background: radial-gradient(120% 120% at 30% 30%, #1c2330, #0f141c);
+      border: 1px solid #0c1016;
+      box-shadow: var(--shadow);
+      display: grid;
+      place-items: center;
+      cursor: ns-resize;
+    }
+    .knob .cap {
+      width: 74%;
+      height: 74%;
+      border-radius: 50%;
+      background: radial-gradient(120% 120% at 30% 30%, #232b38, #121923);
+      border: 1px solid #0d1219;
+      position: relative;
+      transform: rotate(0deg);
+      transition: transform 40ms linear;
+    }
+    .knob .pointer {
+      position: absolute;
+      top: 8%;
+      left: 50%;
+      width: 3px;
+      height: 16%;
+      background: linear-gradient(180deg, #ff9d3b, #ff7a18);
+      border-radius: 2px;
+      transform: translateX(-50%);
+      box-shadow: 0 0 8px rgba(255,122,24,0.6);
+    }
+    .ticks {
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+    .ticks::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(from -120deg, var(--tick) 0 2deg, transparent 2deg 30deg);
+      mask: radial-gradient(circle, transparent 61%, black 62%);
+      -webkit-mask: radial-gradient(circle, transparent 61%, black 62%);
+    }
+    .value {
+      margin-top: 6px;
+      font-family: Orbitron, monospace;
+      font-size: 12px;
+      color: var(--accent-2);
+    }
+
+    /* Middle */
+    .middle {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1.4fr 2fr;
+      gap: 16px;
+    }
+    .transport {
+      background: linear-gradient(180deg, #12161d, #0d1117);
+      border: 1px solid #0c1117;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      align-content: center;
+    }
+    .btn {
+      height: 44px;
+      background: linear-gradient(180deg, #171c24, #10141a);
+      border: 1px solid #0c1117;
+      border-radius: 10px;
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: var(--shadow);
+      font-weight: 700;
+    }
+    .btn:active { filter: brightness(1.15); }
+    .btn.primary { background: linear-gradient(180deg, #ff8f35, #ff7a18); color: #0b0d11; border-color: #ff7a18; }
+    .btn.danger { background: linear-gradient(180deg, #ff4747, #d63c3c); border-color: #b92e2e; color: #111; }
+    .btn.toggle.active { outline: 2px solid var(--accent); box-shadow: 0 0 0 3px rgba(255,122,24,0.15), var(--shadow); }
+
+    .steps {
+      background: linear-gradient(180deg, #12161d, #0d1117);
+      border: 1px solid #0c1117;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 8px;
+      align-items: end;
+    }
+    .step {
+      position: relative;
+      height: clamp(44px, 4.8vw, 56px);
+      background: linear-gradient(180deg, var(--step-off), #0d1117);
+      border: 1px solid #0c1117;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 120ms ease, transform 60ms ease;
+      user-select: none;
+    }
+    .step::after {
+      content: "";
+      position: absolute;
+      top: 6px; left: 50%; transform: translateX(-50%);
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--led-off);
+      box-shadow: inset 0 -1px 0 rgba(255,255,255,0.05);
+    }
+    .step.on { background: linear-gradient(180deg, var(--step-on), #0d1117); }
+    .step.on::after { background: var(--led-on); box-shadow: 0 0 8px rgba(255,122,24,0.8); }
+    .step.playhead { outline: 2px solid var(--accent); }
+    .step.selected { box-shadow: 0 0 0 3px rgba(255,122,24,0.2), var(--shadow); }
+    .step .idx { position: absolute; bottom: 6px; font-size: 10px; color: var(--subtext); }
+
+    /* Bottom tracks */
+    .bottom {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .tracks {
+      background: linear-gradient(180deg, #12161d, #0d1117);
+      border: 1px solid #0c1117;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 10px;
+    }
+    .track-btn {
+      height: 48px;
+      background: linear-gradient(180deg, #171c24, #10141a);
+      border: 1px solid #0c1117;
+      border-radius: 10px;
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: var(--shadow);
+      font-weight: 700;
+      position: relative;
+    }
+    .track-btn .led {
+      position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--led-off);
+    }
+    .track-btn.active { outline: 2px solid var(--accent); }
+    .track-btn.active .led { background: var(--ok); box-shadow: 0 0 8px rgba(43,214,106,0.8); }
+
+    .utilities {
+      background: linear-gradient(180deg, #12161d, #0d1117);
+      border: 1px solid #0c1117;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .note {
+      font-size: 11px;
+      color: var(--subtext);
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    @media (max-width: 920px) {
+      .top, .bottom { grid-template-columns: 1fr; }
+      .middle { grid-template-columns: 1fr; }
+      .screen .data { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="device">
+    <div class="top">
+      <div class="screen">
+        <div>
+          <div class="title">Digitakt² Pattern A01</div>
+          <div class="data">
+            <div class="kv"><div class="k">Tempo</div><div class="v" id="tempoDisplay">120.0</div></div>
+            <div class="kv"><div class="k">Step</div><div class="v" id="stepDisplay">1/16</div></div>
+            <div class="kv"><div class="k">Track</div><div class="v" id="trackDisplay">T1 KICK</div></div>
+            <div class="kv"><div class="k">Mode</div><div class="v" id="modeDisplay">Track</div></div>
+          </div>
+        </div>
+        <div class="note">Click steps to toggle trigs. Adjust knobs. Toggle P‑Lock to write step locks. Space: Play/Stop. 1‑8: Track. Z/X: Tempo.</div>
+      </div>
+      <div class="encoders">
+        <div class="encoder"><div class="label">Level</div><div class="knob" data-param="level"><div class="ticks"></div><div class="cap"><div class="pointer"></div></div></div><div class="value" data-value="level">0.80</div></div>
+        <div class="encoder"><div class="label">Pitch</div><div class="knob" data-param="pitch"><div class="ticks"></div><div class="cap"><div class="pointer"></div></div></div><div class="value" data-value="pitch">0</div></div>
+        <div class="encoder"><div class="label">Decay</div><div class="knob" data-param="decay"><div class="ticks"></div><div class="cap"><div class="pointer"></div></div></div><div class="value" data-value="decay">0.20s</div></div>
+        <div class="encoder"><div class="label">Cutoff</div><div class="knob" data-param="cutoff"><div class="ticks"></div><div class="cap"><div class="pointer"></div></div></div><div class="value" data-value="cutoff">4000Hz</div></div>
+        <div class="encoder"><div class="label">Pan</div><div class="knob" data-param="pan"><div class="ticks"></div><div class="cap"><div class="pointer"></div></div></div><div class="value" data-value="pan">C</div></div>
+        <div class="encoder"><div class="label">Tempo</div><div class="knob" data-param="tempo"><div class="ticks"></div><div class="cap"><div class="pointer"></div></div></div><div class="value" data-value="tempo">120.0</div></div>
+      </div>
+    </div>
+
+    <div class="middle">
+      <div class="transport">
+        <div class="btn primary" id="playBtn">Play</div>
+        <div class="btn" id="stopBtn">Stop</div>
+        <div class="btn toggle" id="plockBtn">P‑Lock</div>
+        <div class="btn danger" id="clearBtn">Clear</div>
+      </div>
+      <div class="steps" id="steps"></div>
+    </div>
+
+    <div class="bottom">
+      <div class="tracks" id="tracks"></div>
+      <div class="utilities">
+        <div class="btn" id="swingBtn">Swing 0%</div>
+        <div class="btn" id="shuffleBtn">Shuffle Off</div>
+        <div class="btn" id="scaleBtn">Scale 1x</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Utilities
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const dbToGain = (db) => Math.pow(10, db / 20);
+    const midiToFreq = (m) => 440 * Math.pow(2, (m - 69) / 12);
+
+    // Data Model
+    const NUM_TRACKS = 8;
+    const NUM_STEPS = 16;
+    const DEFAULT_PARAMS = {
+      level: 0.8,
+      pitch: 0,      // semitones
+      decay: 0.2,    // seconds
+      cutoff: 4000,  // Hz
+      pan: 0         // -1..1
+    };
+
+    const TRACK_TYPES = [
+      'KICK','SNARE','HAT','TOM','CLAP','PERC','SYN','BASS'
+    ];
+
+    function createEmptyPattern() {
+      return Array.from({ length: NUM_TRACKS }, () => ({
+        name: '',
+        defaults: { ...DEFAULT_PARAMS },
+        steps: Array.from({ length: NUM_STEPS }, () => ({ trig: false, locks: null }))
+      }));
+    }
+
+    const storage = {
+      save(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+      },
+      load(key, fallback) {
+        try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+      }
+    };
+
+    // Audio Engine
+    class AudioEngine {
+      constructor() {
+        this.audioContext = null;
+        this.masterGain = null;
+        this.started = false;
+      }
+      async ensureStarted() {
+        if (this.started) return;
+        const ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+        this.audioContext = ctx;
+        this.masterGain = ctx.createGain();
+        this.masterGain.gain.value = 0.85;
+        this.masterGain.connect(ctx.destination);
+        // Noise buffer for snare/hats
+        this.noiseBuffer = this._createNoiseBuffer();
+        this.started = true;
+      }
+      now() {
+        return this.audioContext ? this.audioContext.currentTime : 0;
+      }
+      _createNoiseBuffer() {
+        const length = 2 * 44100;
+        const buffer = (this.audioContext || new AudioContext()).createBuffer(1, length, 44100);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+        return buffer;
+      }
+      trigger(trackIndex, params, when) {
+        if (!this.started) return;
+        const ctx = this.audioContext;
+        const trackType = TRACK_TYPES[trackIndex];
+
+        const outGain = ctx.createGain();
+        outGain.gain.setValueAtTime(params.level, when);
+        const panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(params.pan, when);
+
+        let sourceNode = null;
+        let finalNode = outGain;
+        let filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(params.cutoff, when);
+
+        // Envelope helper
+        const applyDecay = (param, start, decay) => {
+          const t0 = when;
+          param.cancelScheduledValues(t0);
+          param.setValueAtTime(start, t0);
+          param.exponentialRampToValueAtTime(0.0001, t0 + Math.max(0.02, decay));
+        };
+
+        if (trackType === 'KICK') {
+          // Sine with short pitch drop
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          const baseFreq = midiToFreq(36 + params.pitch);
+          osc.frequency.setValueAtTime(baseFreq * 2.5, when);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq, when + Math.min(0.1, params.decay * 0.5));
+          const amp = ctx.createGain();
+          applyDecay(amp.gain, params.level, params.decay);
+          sourceNode = osc;
+          osc.connect(amp).connect(filter).connect(panner).connect(outGain).connect(this.masterGain);
+          osc.start(when);
+          osc.stop(when + Math.max(0.05, params.decay * 1.4));
+          return;
+        }
+
+        if (trackType === 'SNARE') {
+          // Noise burst through bandpass
+          const src = ctx.createBufferSource();
+          src.buffer = this.noiseBuffer;
+          const bp = ctx.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.setValueAtTime(1800 + params.pitch * 30, when);
+          const amp = ctx.createGain();
+          applyDecay(amp.gain, params.level, Math.max(0.08, params.decay));
+          src.connect(bp).connect(filter).connect(panner).connect(outGain).connect(this.masterGain);
+          src.start(when);
+          src.stop(when + Math.max(0.05, params.decay * 2.0));
+          return;
+        }
+
+        if (trackType === 'HAT') {
+          // Highpass noise burst
+          const src = ctx.createBufferSource();
+          src.buffer = this.noiseBuffer;
+          const hp = ctx.createBiquadFilter();
+          hp.type = 'highpass';
+          hp.frequency.setValueAtTime(6000 + params.pitch * 40, when);
+          const amp = ctx.createGain();
+          applyDecay(amp.gain, params.level * 0.8, Math.max(0.03, params.decay * 0.6));
+          src.connect(hp).connect(filter).connect(panner).connect(outGain).connect(this.masterGain);
+          src.start(when);
+          src.stop(when + Math.max(0.03, params.decay));
+          return;
+        }
+
+        if (trackType === 'TOM') {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          const baseFreq = midiToFreq(48 + params.pitch);
+          osc.frequency.setValueAtTime(baseFreq, when);
+          const amp = ctx.createGain();
+          applyDecay(amp.gain, params.level * 0.9, params.decay);
+          osc.connect(amp).connect(filter).connect(panner).connect(outGain).connect(this.masterGain);
+          osc.start(when);
+          osc.stop(when + Math.max(0.05, params.decay * 1.2));
+          return;
+        }
+
+        if (trackType === 'CLAP') {
+          // Multi-burst noise
+          const makeBurst = (offset) => {
+            const src = ctx.createBufferSource(); src.buffer = this.noiseBuffer;
+            const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.setValueAtTime(1500 + params.pitch * 30, when + offset);
+            const amp = ctx.createGain();
+            const len = Math.max(0.04, params.decay * 0.8);
+            amp.gain.setValueAtTime(params.level * 0.9, when + offset);
+            amp.gain.exponentialRampToValueAtTime(0.0001, when + offset + len);
+            src.connect(bp).connect(filter).connect(panner).connect(outGain).connect(this.masterGain);
+            src.start(when + offset);
+            src.stop(when + offset + len);
+          };
+          makeBurst(0.0); makeBurst(0.02); makeBurst(0.045);
+          return;
+        }
+
+        if (trackType === 'PERC') {
+          const osc = ctx.createOscillator();
+          osc.type = 'square';
+          const baseFreq = midiToFreq(60 + params.pitch);
+          osc.frequency.setValueAtTime(baseFreq, when);
+          const amp = ctx.createGain();
+          applyDecay(amp.gain, params.level * 0.8, params.decay * 0.7);
+          osc.connect(amp).connect(filter).connect(panner).connect(outGain).connect(this.masterGain);
+          osc.start(when);
+          osc.stop(when + Math.max(0.04, params.decay));
+          return;
+        }
+
+        if (trackType === 'SYN') {
+          const osc = ctx.createOscillator();
+          osc.type = 'sawtooth';
+          const baseFreq = midiToFreq(64 + params.pitch);
+          osc.frequency.setValueAtTime(baseFreq, when);
+          const amp = ctx.createGain();
+          applyDecay(amp.gain, params.level * 0.7, params.decay * 1.5);
+          osc.connect(amp).connect(filter).connect(panner).connect(outGain).connect(this.masterGain);
+          osc.start(when);
+          osc.stop(when + Math.max(0.1, params.decay * 1.8));
+          return;
+        }
+
+        if (trackType === 'BASS') {
+          const osc = ctx.createOscillator();
+          osc.type = 'square';
+          const baseFreq = midiToFreq(36 + params.pitch);
+          osc.frequency.setValueAtTime(baseFreq, when);
+          const amp = ctx.createGain();
+          applyDecay(amp.gain, params.level, params.decay * 1.2);
+          osc.connect(amp).connect(filter).connect(panner).connect(outGain).connect(this.masterGain);
+          osc.start(when);
+          osc.stop(when + Math.max(0.08, params.decay * 1.4));
+          return;
+        }
+      }
+    }
+
+    // Sequencer
+    class Sequencer {
+      constructor(engine) {
+        this.engine = engine;
+        this.isPlaying = false;
+        this.bpm = 120;
+        this.currentStep = 0;
+        this.nextNoteTime = 0;
+        this.lookaheadMs = 25;
+        this.scheduleAheadSec = 0.12;
+        this.timerId = null;
+        this.swing = 0; // 0..0.5
+      }
+      setTempo(bpm) {
+        this.bpm = clamp(bpm, 50, 240);
+      }
+      stepDurationSec() { return 60.0 / this.bpm / 4.0; } // 16th
+      start(pattern) {
+        this.pattern = pattern;
+        this.isPlaying = true;
+        this.currentStep = 0;
+        this.nextNoteTime = this.engine.now() + 0.06;
+        this._scheduler();
+        this.timerId = setInterval(() => this._scheduler(), this.lookaheadMs);
+      }
+      stop() {
+        this.isPlaying = false;
+        if (this.timerId) clearInterval(this.timerId);
+        this.timerId = null;
+      }
+      _scheduler() {
+        if (!this.isPlaying) return;
+        const stepDur = this.stepDurationSec();
+        const swingAmt = this.swing * 0.5;
+        while (this.nextNoteTime < this.engine.now() + this.scheduleAheadSec) {
+          const stepIndex = this.currentStep;
+          // Swing: delay even steps
+          const isEven = stepIndex % 2 === 1;
+          const when = this.nextNoteTime + (isEven ? swingAmt * stepDur : 0);
+          for (let t = 0; t < NUM_TRACKS; t++) {
+            const track = this.pattern[t];
+            const step = track.steps[stepIndex];
+            if (step.trig) {
+              const params = { ...track.defaults, ...(step.locks || {}) };
+              this.engine.trigger(t, params, when);
+            }
+          }
+          ui.onStepScheduled(stepIndex, when);
+          this._advanceStep();
+        }
+      }
+      _advanceStep() {
+        const stepDur = this.stepDurationSec();
+        this.nextNoteTime += stepDur;
+        this.currentStep = (this.currentStep + 1) % NUM_STEPS;
+      }
+    }
+
+    // UI Controller
+    class UIController {
+      constructor() {
+        this.pattern = storage.load('digitakt2_pattern', createEmptyPattern());
+        this.selectedTrack = 0;
+        this.selectedStep = 0;
+        this.plockMode = false;
+
+        this.engine = new AudioEngine();
+        this.sequencer = new Sequencer(this.engine);
+        const savedState = storage.load('digitakt2_state', { bpm: 120, plock: false, selectedTrack: 0 });
+        this.sequencer.setTempo(savedState.bpm || 120);
+        this.plockMode = !!savedState.plock;
+        this.selectedTrack = clamp(savedState.selectedTrack ?? 0, 0, NUM_TRACKS - 1);
+
+        this.dom = this._queryDom();
+        this._buildTracks();
+        this._buildSteps();
+        this._bindTransport();
+        this._bindKnobs();
+        this._bindKeyboard();
+        this._refreshAll();
+      }
+      _queryDom() {
+        return {
+          steps: document.getElementById('steps'),
+          tracks: document.getElementById('tracks'),
+          playBtn: document.getElementById('playBtn'),
+          stopBtn: document.getElementById('stopBtn'),
+          clearBtn: document.getElementById('clearBtn'),
+          plockBtn: document.getElementById('plockBtn'),
+          swingBtn: document.getElementById('swingBtn'),
+          shuffleBtn: document.getElementById('shuffleBtn'),
+          scaleBtn: document.getElementById('scaleBtn'),
+          tempoDisplay: document.getElementById('tempoDisplay'),
+          stepDisplay: document.getElementById('stepDisplay'),
+          trackDisplay: document.getElementById('trackDisplay'),
+          modeDisplay: document.getElementById('modeDisplay'),
+          encoderValues: {
+            level: document.querySelector('[data-value="level"]'),
+            pitch: document.querySelector('[data-value="pitch"]'),
+            decay: document.querySelector('[data-value="decay"]'),
+            cutoff: document.querySelector('[data-value="cutoff"]'),
+            pan: document.querySelector('[data-value="pan"]'),
+            tempo: document.querySelector('[data-value="tempo"]'),
+          },
+          knobs: Array.from(document.querySelectorAll('.knob')),
+        };
+      }
+      _buildTracks() {
+        this.dom.tracks.innerHTML = '';
+        for (let i = 0; i < NUM_TRACKS; i++) {
+          const div = document.createElement('div');
+          div.className = 'track-btn';
+          const label = `${i+1} ${TRACK_TYPES[i]}`;
+          div.textContent = label;
+          const led = document.createElement('div');
+          led.className = 'led';
+          div.appendChild(led);
+          if (i === this.selectedTrack) div.classList.add('active');
+          div.addEventListener('click', () => {
+            this.selectedTrack = i;
+            this._refreshTracks();
+            this._refreshEncoders();
+            this._saveState();
+          });
+          this.dom.tracks.appendChild(div);
+        }
+      }
+      _buildSteps() {
+        this.dom.steps.innerHTML = '';
+        for (let s = 0; s < NUM_STEPS; s++) {
+          const stepDiv = document.createElement('div');
+          stepDiv.className = 'step';
+          const idx = document.createElement('div');
+          idx.className = 'idx';
+          idx.textContent = String(s+1);
+          stepDiv.appendChild(idx);
+          stepDiv.addEventListener('click', () => {
+            const step = this.pattern[this.selectedTrack].steps[s];
+            step.trig = !step.trig;
+            // Select step for parameter locks
+            this.selectedStep = s;
+            this._refreshSteps();
+            this._savePattern();
+          });
+          stepDiv.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            // Clear locks on right-click
+            const step = this.pattern[this.selectedTrack].steps[s];
+            step.locks = null;
+            this.selectedStep = s;
+            this._refreshSteps();
+            this._savePattern();
+          });
+          this.dom.steps.appendChild(stepDiv);
+        }
+        this._refreshSteps();
+      }
+      _bindTransport() {
+        this.dom.playBtn.addEventListener('click', async () => {
+          await this.engine.ensureStarted();
+          if (!this.sequencer.isPlaying) {
+            this.sequencer.start(this.pattern);
+            this.dom.playBtn.textContent = 'Pause';
+          } else {
+            this.sequencer.stop();
+            this.dom.playBtn.textContent = 'Play';
+          }
+        });
+        this.dom.stopBtn.addEventListener('click', () => {
+          this.sequencer.stop();
+          this.dom.playBtn.textContent = 'Play';
+          this._clearPlayhead();
+        });
+        this.dom.clearBtn.addEventListener('click', () => {
+          if (!confirm('Clear current pattern?')) return;
+          this.pattern = createEmptyPattern();
+          this._refreshAll();
+          this._savePattern();
+        });
+        this.dom.plockBtn.addEventListener('click', () => {
+          this.plockMode = !this.plockMode;
+          this._refreshMode();
+          this._saveState();
+        });
+      }
+      _bindKnobs() {
+        const knobConfig = {
+          level: { min: 0, max: 1, step: 0.01, toText: v => v.toFixed(2), fromText: v => parseFloat(v) },
+          pitch: { min: -24, max: 24, step: 1, toText: v => String(Math.round(v)), fromText: v => parseInt(v, 10) },
+          decay: { min: 0.02, max: 1.8, step: 0.01, toText: v => v.toFixed(2) + 's', fromText: v => parseFloat(v) },
+          cutoff: { min: 200, max: 10000, step: 1, toText: v => Math.round(v) + 'Hz', fromText: v => parseFloat(v) },
+          pan: { min: -1, max: 1, step: 0.01, toText: v => (Math.abs(v) < 0.01 ? 'C' : (v < 0 ? 'L' + Math.round(Math.abs(v)*100) : 'R' + Math.round(Math.abs(v)*100))), fromText: v => parseFloat(v) },
+          tempo: { min: 50, max: 240, step: 0.1, toText: v => v.toFixed(1), fromText: v => parseFloat(v) },
+        };
+        const angleRange = 270; // degrees usable (from -135 to +135)
+        const startAngle = -135;
+        const knobState = new Map();
+
+        const valueToAngle = (value, min, max) => startAngle + (value - min) / (max - min) * angleRange;
+        const angleToValue = (angle, min, max) => {
+          const a = clamp(angle, startAngle, startAngle + angleRange);
+          const t = (a - startAngle) / angleRange;
+          return min + t * (max - min);
+        };
+
+        const onChange = (param, value) => {
+          if (param === 'tempo') {
+            this.sequencer.setTempo(value);
+            this.dom.encoderValues.tempo.textContent = knobConfig.tempo.toText(this.sequencer.bpm);
+            this.dom.tempoDisplay.textContent = knobConfig.tempo.toText(this.sequencer.bpm);
+            this._saveState();
+            return;
+          }
+          const track = this.pattern[this.selectedTrack];
+          if (this.plockMode) {
+            const step = track.steps[this.selectedStep];
+            step.locks = step.locks || {};
+            step.locks[param] = value;
+          } else {
+            track.defaults[param] = value;
+          }
+          this._refreshEncoders();
+          this._savePattern();
+        };
+
+        // Initialize knob visuals and interactions
+        this.dom.knobs.forEach((knobEl) => {
+          const param = knobEl.getAttribute('data-param');
+          const cap = knobEl.querySelector('.cap');
+          const cfg = knobConfig[param];
+          const getCurrentValue = () => {
+            if (param === 'tempo') return this.sequencer.bpm;
+            const track = this.pattern[this.selectedTrack];
+            if (this.plockMode) {
+              const step = track.steps[this.selectedStep];
+              const v = step.locks && step.locks[param];
+              return v !== undefined ? v : track.defaults[param];
+            }
+            return track.defaults[param];
+          };
+          const setCapAngle = () => {
+            const v = getCurrentValue();
+            const angle = valueToAngle(v, cfg.min, cfg.max);
+            cap.style.transform = `rotate(${angle}deg)`;
+            const displayEl = this.dom.encoderValues[param];
+            if (displayEl) displayEl.textContent = cfg.toText(v);
+            if (param !== 'tempo') this._refreshDisplays();
+          };
+          setCapAngle();
+
+          const state = { active: false, startY: 0, startV: getCurrentValue() };
+          knobState.set(knobEl, state);
+          const updateFromDelta = (dy) => {
+            const sensitivity = 0.008 * (param === 'cutoff' ? 1.5 : 1);
+            let v = state.startV + (-dy) * (cfg.max - cfg.min) * sensitivity;
+            // snap for pitch & pan
+            if (param === 'pitch') v = Math.round(v);
+            if (param === 'pan' && Math.abs(v) < 0.02) v = 0;
+            v = clamp(v, cfg.min, cfg.max);
+            const angle = valueToAngle(v, cfg.min, cfg.max);
+            cap.style.transform = `rotate(${angle}deg)`;
+            const displayEl = this.dom.encoderValues[param];
+            if (displayEl) displayEl.textContent = cfg.toText(v);
+            if (param === 'tempo') {
+              this.dom.tempoDisplay.textContent = cfg.toText(v);
+            }
+            return v;
+          };
+          const commit = (v) => onChange(param, v);
+
+          const onPointerDown = (e) => {
+            e.preventDefault();
+            knobEl.setPointerCapture(e.pointerId);
+            state.active = true; state.startY = e.clientY; state.startV = getCurrentValue();
+          };
+          const onPointerMove = (e) => {
+            if (!state.active) return;
+            const v = updateFromDelta(e.clientY - state.startY);
+            state.lastV = v;
+          };
+          const onPointerUp = (e) => {
+            if (!state.active) return;
+            state.active = false;
+            commit(state.lastV !== undefined ? state.lastV : state.startV);
+          };
+          knobEl.addEventListener('pointerdown', onPointerDown);
+          window.addEventListener('pointermove', onPointerMove);
+          window.addEventListener('pointerup', onPointerUp);
+
+          knobEl.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            const defaults = { level: 0.8, pitch: 0, decay: 0.2, cutoff: 4000, pan: 0, tempo: 120 };
+            commit(defaults[param]);
+            setCapAngle();
+          });
+        });
+      }
+      _bindKeyboard() {
+        window.addEventListener('keydown', async (e) => {
+          if (e.repeat) return;
+          if (e.code === 'Space') {
+            e.preventDefault();
+            await this.engine.ensureStarted();
+            if (!this.sequencer.isPlaying) { this.sequencer.start(this.pattern); this.dom.playBtn.textContent = 'Pause'; }
+            else { this.sequencer.stop(); this.dom.playBtn.textContent = 'Play'; this._clearPlayhead(); }
+          }
+          if (e.code === 'KeyZ') { this.sequencer.setTempo(this.sequencer.bpm - 1); this._refreshDisplays(); this._saveState(); }
+          if (e.code === 'KeyX') { this.sequencer.setTempo(this.sequencer.bpm + 1); this._refreshDisplays(); this._saveState(); }
+          if (e.key >= '1' && e.key <= '8') {
+            this.selectedTrack = parseInt(e.key, 10) - 1;
+            this._refreshTracks();
+            this._refreshEncoders();
+            this._saveState();
+          }
+        });
+      }
+      _refreshTracks() {
+        const children = Array.from(this.dom.tracks.children);
+        children.forEach((el, idx) => el.classList.toggle('active', idx === this.selectedTrack));
+        const label = `${this.selectedTrack + 1} ${TRACK_TYPES[this.selectedTrack]}`;
+        this.dom.trackDisplay.textContent = `T${this.selectedTrack + 1} ${TRACK_TYPES[this.selectedTrack]}`;
+      }
+      _refreshSteps() {
+        const track = this.pattern[this.selectedTrack];
+        const children = Array.from(this.dom.steps.children);
+        children.forEach((el, idx) => {
+          el.classList.toggle('on', !!track.steps[idx].trig);
+          el.classList.toggle('selected', idx === this.selectedStep);
+        });
+      }
+      _clearPlayhead() {
+        const children = Array.from(this.dom.steps.children);
+        children.forEach((el) => el.classList.remove('playhead'));
+        this.dom.stepDisplay.textContent = `${(this.sequencer.currentStep % NUM_STEPS)+1}/16`;
+      }
+      onStepScheduled(stepIndex, when) {
+        // Visual playhead update aligned to audio time
+        const update = () => {
+          const now = this.engine.now();
+          if (now >= when) {
+            const children = Array.from(this.dom.steps.children);
+            children.forEach((el, idx) => el.classList.toggle('playhead', idx === stepIndex));
+            this.dom.stepDisplay.textContent = `${stepIndex + 1}/16`;
+            return true;
+          }
+          return false;
+        };
+        if (!update()) setTimeout(update, Math.max(0, (when - this.engine.now()) * 1000));
+      }
+      _refreshMode() {
+        this.dom.plockBtn.classList.toggle('active', this.plockMode);
+        this.dom.modeDisplay.textContent = this.plockMode ? 'P‑Lock' : 'Track';
+        this._refreshEncoders();
+      }
+      _refreshEncoders() {
+        const update = (param, formatter) => {
+          const track = this.pattern[this.selectedTrack];
+          const v = this.plockMode && (track.steps[this.selectedStep].locks && track.steps[this.selectedStep].locks[param] !== undefined)
+            ? track.steps[this.selectedStep].locks[param]
+            : track.defaults[param];
+          const displayEl = this.dom.encoderValues[param];
+          if (displayEl) displayEl.textContent = formatter(v);
+          // Rotate caps
+          const knobEl = document.querySelector(`.knob[data-param="${param}"] .cap`);
+          const cfgs = {
+            level: { min: 0, max: 1 }, pitch: { min: -24, max: 24 }, decay: { min: 0.02, max: 1.8 }, cutoff: { min: 200, max: 10000 }, pan: { min: -1, max: 1 }
+          };
+          const cfg = cfgs[param];
+          if (cfg && knobEl) {
+            const angle = -135 + (v - cfg.min) / (cfg.max - cfg.min) * 270;
+            knobEl.style.transform = `rotate(${angle}deg)`;
+          }
+        };
+        update('level', v => v.toFixed(2));
+        update('pitch', v => String(Math.round(v)));
+        update('decay', v => v.toFixed(2) + 's');
+        update('cutoff', v => Math.round(v) + 'Hz');
+        update('pan', v => (Math.abs(v) < 0.01 ? 'C' : (v < 0 ? 'L' + Math.round(Math.abs(v)*100) : 'R' + Math.round(Math.abs(v)*100))));
+        this._refreshDisplays();
+      }
+      _refreshDisplays() {
+        this.dom.tempoDisplay.textContent = this.sequencer.bpm.toFixed(1);
+        this.dom.encoderValues.tempo.textContent = this.sequencer.bpm.toFixed(1);
+        this.dom.trackDisplay.textContent = `T${this.selectedTrack + 1} ${TRACK_TYPES[this.selectedTrack]}`;
+      }
+      _refreshAll() {
+        this._refreshTracks();
+        this._refreshSteps();
+        this._refreshEncoders();
+        this._refreshMode();
+        this._refreshDisplays();
+      }
+      _savePattern() { storage.save('digitakt2_pattern', this.pattern); }
+      _saveState() { storage.save('digitakt2_state', { bpm: this.sequencer.bpm, plock: this.plockMode, selectedTrack: this.selectedTrack }); }
+    }
+
+    const ui = new UIController();
+  </script>
+</body>
+</html>
+
 <!doctype html>
 <html>
 <head>
